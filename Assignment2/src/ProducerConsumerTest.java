@@ -1,4 +1,4 @@
-public class ProducerComsumerTest {
+public class ProducerConsumerTest {
     public static void main(String[] args) {
 
         int numConsumers = Integer.parseInt(args[0]);
