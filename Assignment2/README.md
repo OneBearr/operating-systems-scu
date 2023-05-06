@@ -1,4 +1,4 @@
-COEN 283 Assignment 2 (Producer-Consumer Programming)
+## COEN 283 Assignment 2 (Producer-Consumer Programming)
 
 Introduction
 -------------
