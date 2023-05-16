@@ -13,6 +13,8 @@ Architecture
    - output.txt
    - README.md
 
+
+
 1. `Simulator.java` is to initialize the simulations in different page replacement algorithms. The entrance of program.
 2. `SimulationTestWithTimer.java` is to initialize the simulation in a timer manner.
 3. `SimulationTestWithLimitRefs.java` is to initialize the simulation in a limit amount of page references manner.
