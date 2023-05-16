@@ -1,5 +1,25 @@
 ## COEN 283 Assignment 3 (Page Replacement Algorithms Programming)
 
+Architecture
+------------------------------------------
+- Assignment3
+   - src
+     - Process.java
+     - SimulationTestWithLimitRefs.java
+     - SimulationTestWithTimer.java
+     - Simulator.java
+     - Statistician.java
+   - screenshots
+   - output.txt
+   - README.md
+
+1. `Simulator.java` is to initialize the simulations in different page replacement algorithms. The entrance of program.
+2. `SimulationTestWithTimer.java` is to initialize the simulation in a timer manner.
+3. `SimulationTestWithLimitRefs.java` is to initialize the simulation in a limit amount of page references manner.
+4. `Process.java` defines all the attributes and features of a process.
+5. `Statistician.java` is to collect page hit/miss and the number of processes swapped-in memory.
+
+
 How to run the program
 ------------------------------------------
 1. Setup Java environment and go to the "src" directory
