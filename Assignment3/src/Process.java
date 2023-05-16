@@ -1,5 +1,6 @@
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Semaphore;
 
 public class Process extends Thread{
     private static final int MAX_FRAMES_SIZE = 4;
@@ -14,123 +15,135 @@ public class Process extends Thread{
     private String algo;
     private List<Integer> frames;    // the memory map of current process
     private Random random;
-    private Semaphore pageSemaphore;
+    private Set<String> memoryMapSet;
     private Statistician stat;
+    private boolean printPageRef;
 
     public Process(String name, int size, long arrivalTime, int duration, String algo,
-                   Semaphore pageSemaphore, Statistician stat) {
+                   Set<String> memoryMapSet, Statistician stat, boolean printPageRef) {
         this.processName = name;
         this.size = size;
         this.arrivalTime = arrivalTime;
         this.duration = duration;
         this.algo = algo;
-        this.pageSemaphore = pageSemaphore;
+        this.memoryMapSet = memoryMapSet;
         this.frames = new ArrayList<>();
         this.random = new Random();
         this.stat = stat;
+        this.printPageRef = printPageRef;
     }
 
     @Override
     public void run() {
-        try {
-            System.out.println("Process " + processName + " is waiting for pages.");
-            pageSemaphore.acquire(MAX_FRAMES_SIZE);
-            System.out.println("Process " + processName + " has acquired "
-                    + MAX_FRAMES_SIZE + " pages and start running " + duration + " ms" + " in size " + size);
-            switch (algo) {
-                case "fifo":
-                    startPagingInFIFO();
-                    break;
-                case "lru":
-                    startPagingInLRU();
-                    break;
-                case "optimal":
-                    startPagingInOptimal();
-                    break;
-                case "random":
-                    startPagingInRandom();
-                    break;
-            }
-            synchronized (stat) {
-                stat.addTotalHit(hit);
-                stat.addTotalMiss(miss);
-            }
-            System.out.println("Process " + processName + " has released "
-                    + MAX_FRAMES_SIZE + " pages and finished running.");
-            pageSemaphore.release(MAX_FRAMES_SIZE);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        String currentTime = getCurrentTime();
+        System.out.println("<" + currentTime + ", " + processName + ", Enter, Size in Pages: " + size
+                + ", Service Duration: " + duration + ", Memory-map: "+ memoryMapSet + ">");
+        // A process is swapped in (start running)
+        stat.addTotalSwappedIn();
+        switch (algo) {
+            case "fifo":
+                startPagingInFIFO();
+                break;
+            case "lru":
+                startPagingInLRU();
+                break;
+            case "optimal":
+                startPagingInOptimal();
+                break;
+            case "random":
+                startPagingInRandom();
+                break;
         }
+        stat.addTotalHit(hit);
+        stat.addTotalMiss(miss);
+        // A process has completed (exit and therefore remove from memory)
+        memoryMapSet.remove(processName);
+        String currentTime2 = getCurrentTime();
+        System.out.println("<" + currentTime2 + ", " + processName + ", Exit, Size in Pages: " + size
+                + ", Service Duration: " + duration + ", Memory-map: "+ memoryMapSet + ">");
+    }
+
+    private String getCurrentTime() {
+        // Get the current timestamp
+        LocalDateTime currentTime = LocalDateTime.now();
+        // Define the desired date format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        // Format the timestamp using the formatter
+        String formattedTime = currentTime.format(formatter);
+        return formattedTime;
     }
 
     private void startPagingInFIFO() {
-        System.out.println("start paging in fifo.");
         int numberOfRefs = duration / REFERENCE_INTERVAL;
         int lastPage = INITIAL_PAGE_NUMBER;
         int fifoIdx = 0;
         for (int i = 0; i < numberOfRefs; i++) {
             int nextPage = getNextPage(lastPage);
             lastPage = nextPage;
-//            System.out.println("Start page referencing " + i);
+            String currentTime = getCurrentTime();
             if (frames.contains(nextPage)) {   // page hit
                 hit++;
-                System.out.println(processName + " page hit, nextPage is " + nextPage);
-            } else {                            // page miss
+                if (printPageRef) {
+                    System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                            + ", if-Page-in-memory: Yes" + ", page number evicted: N/A" + ">");
+                }
+            } else {    // page miss
                 miss++;
                 if (frames.size() < MAX_FRAMES_SIZE) {
                     frames.add(nextPage);
-                    System.out.println(processName + " page miss, added page " + nextPage);
-                    System.out.println("New frames: " + frames);
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: N/A" + ">");
+                    }
                 } else {
-                    System.out.println("Old frames: " + frames);
                     // update frame in fifo index
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: " + frames.get(fifoIdx) + ">");
+                    }
                     frames.set(fifoIdx, nextPage);
                     fifoIdx = (fifoIdx + 1) % MAX_FRAMES_SIZE;
-                    System.out.println(processName + " page missed, fifo update, nextPage is " + nextPage);
-                    System.out.println("New frames: " + frames);
                 }
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            sleep100ms();
         }
     }
+
     private void startPagingInRandom() {
-        System.out.println("start paging in random.");
         int numberOfRefs = duration / REFERENCE_INTERVAL;
         int lastPage = INITIAL_PAGE_NUMBER;
         for (int i = 0; i < numberOfRefs; i++) {
             int nextPage = getNextPage(lastPage);
             lastPage = nextPage;
+            String currentTime = getCurrentTime();
             if (frames.contains(nextPage)) {   // page hit
                 hit++;
-                System.out.println(processName + " page hit, nextPage is " + nextPage);
-            } else {                            // page miss
+                if (printPageRef) {
+                    System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                            + ", if-Page-in-memory: Yes" + ", page number evicted: N/A" + ">");
+                }
+            } else {      // page miss
                 miss++;
                 if (frames.size() < MAX_FRAMES_SIZE) {
                     frames.add(nextPage);
-                    System.out.println(processName + " page miss, added page " + nextPage);
-                    System.out.println("New frames: " + frames);
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: N/A" + ">");
+                    }
                 } else {
-                    System.out.println("Old frames: " + frames);
                     // update frame in random index
-                    frames.set(random.nextInt(MAX_FRAMES_SIZE), nextPage);
-                    System.out.println(processName + " page missed, fifo update, nextPage is " + nextPage);
-                    System.out.println("New frames: " + frames);
+                    int randomIdx = random.nextInt(MAX_FRAMES_SIZE);
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: " + frames.get(randomIdx) + ">");
+                    }
+                    frames.set(randomIdx, nextPage);
                 }
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            sleep100ms();
         }
     }
-
     private void startPagingInOptimal() {
-        System.out.println("start paging in optimal.");
         int numberOfRefs = duration / REFERENCE_INTERVAL;
         int lastPage = INITIAL_PAGE_NUMBER;
         List<Integer> futurePages = new ArrayList<>();
@@ -139,21 +152,24 @@ public class Process extends Thread{
             futurePages.add(nextPage);
             lastPage = nextPage;
         }
-        System.out.println("future page queue is : " + futurePages);
-        System.out.println("future page queue size is : " + futurePages.size());
         for (int i = 0; i < numberOfRefs; i++) {
             int nextPage = futurePages.get(i);
+            String currentTime = getCurrentTime();
             if (frames.contains(nextPage)) {   // page hit
                 hit++;
-                System.out.println(processName + " page hit, nextPage is " + nextPage);
-            } else {                            // page miss
+                if (printPageRef) {
+                    System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                            + ", if-Page-in-memory: Yes" + ", page number evicted: N/A" + ">");
+                }
+            } else {      // page miss
                 miss++;
                 if (frames.size() < MAX_FRAMES_SIZE) {
                     frames.add(nextPage);
-                    System.out.println(processName + " page miss, added page " + nextPage);
-                    System.out.println("New frames: " + frames);
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: N/A" + ">");
+                    }
                 } else {
-                    System.out.println("Old frames: " + frames);
                     // update frame in optimal manner
                     // clone the current frames
                     List<Integer> cloneFrames = new ArrayList<>(frames);
@@ -170,77 +186,60 @@ public class Process extends Thread{
                     // the remaining pages in the cloneFrames, will not be used in the near future
                     // update the page
                     int updateIdx = frames.indexOf(cloneFrames.get(0));
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: " + frames.get(updateIdx) + ">");
+                    }
                     frames.set(updateIdx, nextPage);
-                    System.out.println(processName + " page missed, fifo update, nextPage is " + nextPage);
-                    System.out.println("New frames: " + frames);
                 }
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            sleep100ms();
         }
     }
-
     private void startPagingInLRU() {
-        System.out.println("start paging in lru.");
         int numberOfRefs = duration / REFERENCE_INTERVAL;
         int lastPage = INITIAL_PAGE_NUMBER;
         List<Long> frameTimestamps = new ArrayList<>();
         for (int i = 0; i < numberOfRefs; i++) {
             int nextPage = getNextPage(lastPage);
             lastPage = nextPage;
-
+            String currentTime = getCurrentTime();
             int idx = frames.indexOf(nextPage);
             long newTimestamp = System.currentTimeMillis();
             if (idx >= 0) {   // page hit
                 frameTimestamps.set(idx, newTimestamp);    // update the timestamp
                 hit++;
-                System.out.println(processName + " page hit, nextPage is " + nextPage);
+                if (printPageRef) {
+                    System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                            + ", if-Page-in-memory: Yes" + ", page number evicted: N/A" + ">");
+                }
             } else {         // page miss
                 miss++;
                 if (frames.size() < MAX_FRAMES_SIZE) {
                     frames.add(nextPage);               // add the new frame
                     frameTimestamps.add(newTimestamp);     // add the timestamp
-                    System.out.println(processName + " page miss, added page " + nextPage);
-                    System.out.println("New frames: " + frames);
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: N/A" + ">");
+                    }
                 } else {
-                    System.out.println("Old frames: " + frames);
                     // find the least recently used index by the timestamps
                     int updateIdx = frameTimestamps.indexOf(Collections.min(frameTimestamps));
+                    if (printPageRef) {
+                        System.out.println("<" + currentTime + ", " + processName + ", page-referenced: " + nextPage
+                                + ", if-Page-in-memory: No" + ", page number evicted: " + frames.get(updateIdx) + ">");
+                    }
                     frames.set(updateIdx, nextPage);
                     frameTimestamps.set(updateIdx, newTimestamp);
-                    System.out.println(processName + " page missed, fifo update, nextPage is " + nextPage);
-                    System.out.println("New frames: " + frames);
                 }
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            sleep100ms();
         }
     }
-    private void updatePageMapByRandom(int nextPage) {
-        System.out.println(processName + " page missed, random update, nextPage is " + nextPage);
-    }
-
-    private void updatePageMapByOptimal(int nextPage) {
-        System.out.println(processName + " page missed, optimal update, nextPage is " + nextPage);
-
-    }
-
-    private void updatePageMapByLRU(int nextPage) {
-        System.out.println(processName + " page missed, lru update, nextPage is " + nextPage);
-
-    }
-
     private int getNextPage(int lastPage) {
         int nextPage;
         // Generate a random number between 0 and 9 (inclusive)
         int randomNumber = random.nextInt(10);
-
         // Apply the rules based on the probabilities
         if (randomNumber < 7) {
             // 70% probability: n is lastPage or lastPage-1 or lastPage+1
@@ -253,53 +252,23 @@ public class Process extends Thread{
                 nextPage = random.nextInt(size);
             } while (Math.abs(nextPage - lastPage) <= 1);
         }
-
         return nextPage;
     }
-//    private boolean inPageMap(int nextPage) {
-//        for (int p : pageMap) {
-//            if (p == nextPage) return true;
-//        }
-//        return false;
-//    }
 
-    public String getProcessName() {
-        return processName;
-    }
-
-    public void setProcessName(String name) {
-        this.processName = name;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
-
-    public int getDuration() {
-        return duration;
-    }
-
-    public void setDuration(int duration) {
-        this.duration = duration;
-    }
-
-    public Semaphore getPageSemaphore() {
-        return pageSemaphore;
-    }
-
-    public void setPageSemaphore(Semaphore pageSemaphore) {
-        this.pageSemaphore = pageSemaphore;
+    private void sleep100ms() {
+        // every 100 ms the process references another memory location
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public long getArrivalTime() {
         return arrivalTime;
     }
 
-    public void setArrivalTime(long arrivalTime) {
-        this.arrivalTime = arrivalTime;
+    public String getProcessName() {
+        return processName;
     }
 }
