@@ -77,7 +77,8 @@ Page-in-memory, which process/page number will be evicted if needed>
 
 Simulator
 ------------------------------
-Simulate the page replacement algorithms FIFO, LRU, optimal algorithm, and random pick:
+Simulate the page replacement algorithms FIFO, LRU, optimal algorithm, and random pick
+[(explanation with examples)](https://www.scaler.com/topics/operating-system/page-replacement-algorithm/):
 1. Run simulator 5 times, each to complete the one minutes, and compute the hit/miss ratio of pages referenced 
 by the running jobs for each run. Then get average of 5 runs.
 2. Run the simulator for 100 page references, and for each reference, print the 
