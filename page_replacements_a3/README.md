@@ -33,9 +33,9 @@ How to run the program
 Introduction
 -------------
 The purpose of this assignment is to explore the various memory management algorithms for swapping and paging. 
-You will write a series of small simulation programs in C, C++ or Java. You will generate simulated processes 
+Write a series of simulation programs in Java. Generate simulated processes 
 <Process Name, Process size in pages, arrival time, service duration> using random number generator. 
-You should not need to make any process management system calls.
+No need to make any process management system calls.
 
 Workload Generation
 ------------------------------
@@ -54,7 +54,7 @@ run independently and simultaneously for their durations.
 
 Paging
 ------------------------------
-Assume as an example you are running a process that consists of 11 pages numbered 0 through 10. 
+Assume as an example, running a process that consists of 11 pages numbered 0 through 10. 
 Assume when start executing this process there is only free 4 pages Physical memory frames. 
 There are always 11 page-frames available on disk. When the process starts, none of its pages are in memory.
 
