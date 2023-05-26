@@ -1,0 +1,82 @@
+The cylinder requests are: [93, 12, 28, 48, 28, 72, 29, 35, 0, 52]
+
+First Come-First Serve Algorithm, assume the disk arm starts at cylinder/track 50.
+
+Reading track 93, distance moved 43
+
+Reading track 12, distance moved 81
+
+Reading track 28, distance moved 16
+
+Reading track 48, distance moved 20
+
+Reading track 28, distance moved 20
+
+Reading track 72, distance moved 44
+
+Reading track 29, distance moved 43
+
+Reading track 35, distance moved 6
+
+Reading track 0, distance moved 35
+
+Reading track 52, distance moved 52
+
+FCFS Total distance: 360
+
+
+Shortest Seek First (SSF) Algorithm, assume the disk arm starts at cylinder/track 50.
+
+Reading track 48, distance moved 2
+
+Reading track 52, distance moved 4
+
+Reading track 35, distance moved 17
+
+Reading track 29, distance moved 6
+
+Reading track 28, distance moved 1
+
+Reading track 28, distance moved 0
+
+Reading track 12, distance moved 16
+
+Reading track 0, distance moved 12
+
+Reading track 72, distance moved 72
+
+Reading track 93, distance moved 21
+
+SSF Total distance: 151
+
+
+Elevator (SCAN) Algorithm, assume the disk arm starts at cylinder/track 50.
+
+The sorted cylinder requests are: [0, 12, 28, 28, 29, 35, 48, 52, 72, 93]
+
+Reading track 52, distance moved 2
+
+Reading track 72, distance moved 20
+
+Reading track 93, distance moved 21
+
+The disk arm reached cylinder/track 99, distance moved 6
+
+Reading track 48, distance moved 51
+
+Reading track 35, distance moved 13
+
+Reading track 29, distance moved 6
+
+Reading track 28, distance moved 1
+
+Reading track 28, distance moved 0
+
+Reading track 12, distance moved 16
+
+Reading track 0, distance moved 12
+
+SCAN Total distance: 148
+
+
+Process finished with exit code 0
